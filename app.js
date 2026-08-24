@@ -16,7 +16,24 @@ function getSignature(d){
   return d.epithet ? d.epithet.slice(0, 5) + (d.epithet.length > 5 ? '…' : '') : '';
 }
 
-/* ---------- Sound: synthesized in the browser, no audio files needed ---------- */
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * § 音效系統 (Sound System)
+ * Lines: ~19-500
+ *
+ * 使用 Web Audio API 合成所有音效，無需外部音頻文件
+ *
+ * 主要函數：
+ *   - getAudioCtx()        取得/創建音頻上下文
+ *   - playTone()           播放單一音調
+ *   - playSelectSound()    選擇節點時播放（按流派變化音高）
+ *   - playUnlockChime()    首次解鎖節點
+ *   - playEggChime()       發現彩蛋/名言
+ *   - playEthereal*()      空靈系列音效（Whisper/Shimmer/Chime）
+ *   - checkScaleEasterEgg() 音階彩蛋：依序點擊所有流派觸發隱藏和弦
+ *
+ * 依賴：GEN_NOTES（流派音高對照表）
+ * 相關：companion.js §影子系統（觸發 triggerShadowGlow）
+ * ═══════════════════════════════════════════════════════════════════════════════ */
 const SOUND_KEY = 'greekMythTree_sound_v1';
 let soundOn = true;
 try{
@@ -505,7 +522,29 @@ try{
   if(raw) visited = new Set(JSON.parse(raw));
 }catch(e){ /* localStorage unavailable — progress just won't persist */ }
 
-/* ---------- Companion Shadow: the quiet witness ---------- */
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * § 影子系統 (Companion Shadow)
+ * Lines: ~525-1050
+ *
+ * 探索 3 個角色後出現的神秘存在，會根據用戶的哲學選擇逐漸進化
+ *
+ * 主要函數：
+ *   - updateCompanion()      更新影子狀態（探索進化）
+ *   - renderCompanionShadow() 渲染影子外觀（清晰度、顏色、姿態）
+ *   - recordPhiloChoice()    記錄哲學選擇
+ *   - calculatePhiloTendency() 計算主導哲學傾向
+ *   - triggerShadowGlow()    觸發共鳴發光
+ *   - triggerTendencyShiftAnimation() 傾向變化動畫
+ *
+ * 數據結構：companionData（存於 localStorage）
+ *   - visited: Set           已探索節點
+ *   - philoChoices: Object   哲學選擇計數
+ *   - philoTendency: String  主導傾向
+ *   - philoScore: Number     選擇次數
+ *
+ * 相關：philo.js §哲學測驗（記錄選擇）
+ *       mindmap.js §意識地圖（使用相似數據結構）
+ * ═══════════════════════════════════════════════════════════════════════════════ */
 const COMPANION_KEY = 'greekMythTree_companion_v1';
 
 // 哲學家分類：用於 Companion Shadow 進化
@@ -1056,6 +1095,26 @@ function triggerTendencyShiftAnimation(fromTendency, toTendency) {
   }, 2000);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * § 樹狀渲染 (Tree Rendering)
+ * Lines: ~1098-1180
+ *
+ * 核心渲染邏輯：根據 DATA 渲染節點樹、星座圖章、連線
+ *
+ * 主要函數：
+ *   - markVisited()           標記已訪問節點，觸發里程碑檢查
+ *   - updateProgressCounter() 更新進度計數器
+ *   - renderNodes()           主渲染函數（調用其他子系統）
+ *   - generateConstellationSVG() 為節點生成星座圖章 SVG
+ *   - drawConnections()       繪製節點間連線（實線=血緣，虛線=關聯）
+ *
+ * 依賴：
+ *   - DATA（全節點數據）
+ *   - visited（已訪問 Set）
+ *   - ZODIAC_SHAPES（黃道十二宮專屬星座形狀）
+ *
+ * 相關：navigation.js §導航（jumpToNode 會調用 markVisited）
+ * ═══════════════════════════════════════════════════════════════════════════════ */
 function markVisited(id){
   const isNew = !visited.has(id);
   visited.add(id);
@@ -1104,7 +1163,22 @@ function renderNodes(){
   updateProgressCounter();
 }
 
-/* ---------- Constellation medallion: replaces the plain circle with a unique dot-and-line glyph per node ---------- */
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * § 星座圖章系統 (Constellation Medallion)
+ * Lines: ~1166-1230
+ *
+ * 為每個節點生成獨特的星座圖案，替代普通圓點
+ *
+ * 主要函數：
+ *   - generateConstellationSVG() 根據 id 生成固定 seed，決定星座形狀
+ *
+ * 設計邏輯：
+ *   - 使用 id 字串 hash 成 seed，確保同 id 永遠生成相同圖案
+ *   - 黃道十二宮使用 ZODIAC_SHAPES（固定星座連線）
+ *   - 其他角色使用人形骨架模板（5種姿態，6-11個點）
+ *
+ * 依賴：ZODIAC_SHAPES（黃道十二宮專屬形狀）
+ * ═══════════════════════════════════════════════════════════════════════════════ */
 function generateConstellationSVG(id, size){
   size = size || 64;
   let seed = 0;
@@ -1442,7 +1516,27 @@ function renderDetail(id){
   `;
 }
 
-/* ---------- Philosophical Choices: interactive dilemmas linking back to real thinkers in the tree ---------- */
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * § 哲學測驗 + 書信系統 (Philosophical Choices & Letters)
+ * Lines: ~1519-1920
+ *
+ * 「你的抉擇」互動式哲學困境測驗，以及書寫功能
+ *
+ * 主要數據：
+ *   - PHILO_DILEMMAS[]  哲學測驗題庫（電車難題、職場倫理、社交誠信等）
+ *
+ * 主要函數：
+ *   - openPhilo()       打開哲學測驗面板
+ *   - choosePhilo(i)    選擇答案，調用 recordPhiloChoice()
+ *   - nextPhilo()       下一題
+ *   - openLetter()      打開書寫面板
+ *   - submitLetter()    提交書信，存入 companionData.letters
+ *
+ * 觸發進化：choosePhilo() → recordPhiloChoice() → 影子進化
+ *
+ * 依賴：companion.js（philoChoices, philoTendency）
+ * 相關：companion.js §影子系統（記錄選擇後更新）
+ * ═══════════════════════════════════════════════════════════════════════════════ */
 const PHILO_DILEMMAS = [
   {
     q:'一輛失控電車即將撞死五個人，你可以拉下拉桿讓電車轉向，但這樣會撞死另一名原本安全的路人。你會怎麼做？',
@@ -1910,6 +2004,24 @@ function nextPhilo(){
   renderPhilo();
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * § 導航與故事 (Navigation & Story)
+ * Lines: ~2007-2100
+ *
+ * 節點跳轉、圖例切換、故事面板渲染
+ *
+ * 主要函數：
+ *   - jumpToNode(id)        滾動並選中節點
+ *   - toggleLegend()        展開/折疊分支圖例
+ *   - jumpTo(gen)           跳轉到分支頂部
+ *   - toggleStory(id)       切換故事面板顯示
+ *   - renderStoryBox()      渲染故事內容
+ *   - fillMedallion(node)   填充圖章詳細資訊
+ *
+ * 依賴：byId, DATA, selectNode(), renderDetail()
+ *
+ * 相關：tree.js §樹狀渲染（selectNode 會觸發 markVisited）
+ * ═══════════════════════════════════════════════════════════════════════════════ */
 function jumpToNode(id){
   const el = document.getElementById('node-'+id);
   if(el) el.scrollIntoView({behavior:'smooth', block:'center', inline:'center'});
@@ -2096,7 +2208,23 @@ if(visited.size >= 3){
   renderCompanionShadow();
 }
 
-/* ---------- Companion Tuner (Dev Only) ---------- */
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * § 開發者調試面板 (Companion Tuner - Dev Only)
+ * Lines: ~2211-2300
+ *
+ * 按 Ctrl+Shift+T 打開影子參數調整面板（僅開發環境使用）
+ *
+ * 主要函數：
+ *   - tuneCompanion()      調整影子參數
+ *   - resetCompanionTuner() 重置所有參數
+ *   - copyCompanionValues() 導出當前參數為 JSON
+ *
+ * 面板功能：
+ *   - 視覺參數：頭部大小、身體寬度、模糊程度等
+ *   - 互動效果：害羞概率、測試按鈕
+ *
+ * 注意：用戶端不暴露此功能
+ * ═══════════════════════════════════════════════════════════════════════════════ */
 // 按 Ctrl+Shift+T 打开调试面板
 document.addEventListener('keydown', (e) => {
   if(e.ctrlKey && e.shiftKey && e.key === 'T'){
@@ -2298,7 +2426,31 @@ window.addEventListener('scroll', ()=>{
   if(fab) fab.classList.toggle('visible', window.scrollY > 400);
 }, {passive:true});
 
-/* ---------- Easter Egg Wall ---------- */
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * § 塵封軼聞（彩蛋牆）(Easter Egg Wall)
+ * Lines: ~2429-2670
+ *
+ * 「塵封軼聞」是隱藏在節點故事中的冷知識，需滑鼠拖曳「擦灰塵」揭曉
+ *
+ * 主要數據：
+ *   - EASTER_EGGS[]    彩蛋池（共 96 條，格式 {icon, text}')
+ *   - EGG_NODE_MAP     彩蛋與節點的對應關係（85 條有標記）
+ *
+ * 主要函數：
+ *   - renderEggGrid()        渲染拼圖格子
+ *   - setupDustWipe()        設定擦灰塵互動（拖曳 240px 揭曉）
+ *   - revealEgg()            揭曉單一彩蛋
+ *   - openEggWall()          打開彩蛋牆
+ *   - jumpToEggFromNode()    從節點詳情頁快速跳轉
+ *
+ * 彩蛋觸發條件：
+ *   - 滑鼠拖曳：累積 240px 距離自動清除
+ *   - 鍵盤：Tab 聚焦 + Enter 直接揭曉
+ *
+ * 全收集獎勵：96/96 全部發現觸發專屬提示
+ *
+ * 依賴：companion.js（記錄已揭曉狀態）
+ * ═══════════════════════════════════════════════════════════════════════════════ */
 const EASTER_EGGS = [
   {icon:'🪐', text:'土星真的有一顆衛星叫「潘」——就卡在土星環的一道縫隙裡。'},
   {icon:'☄️', text:'小行星「伊卡洛斯」的軌道會週期性飛到離太陽超近的地方，跟神話一模一樣。'},
@@ -2663,7 +2815,23 @@ function restoreRevealed(){
   cards.forEach(card => card.classList.add('revealed'));
 }
 
-/* ---------- Search ---------- */
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * § 搜尋系統 (Search)
+ * Lines: ~2818-2870
+ *
+ * 節點搜尋功能
+ *
+ * 主要函數：
+ *   - openSearch()            打開搜尋面板
+ *   - closeSearch()           關閉搜尋面板
+ *   - switchSearchTab()       切換搜尋類型（全部/僅神祇/僅凡人）
+ *   - matchesQuery()          判斷節點是否匹配查詢
+ *   - renderSearchResults()   渲染搜尋結果
+ *   - selectFromSearch()      從搜尋結果選擇節點
+ *   - genColor()              取得分支顏色
+ *
+ * 依賴：DATA, GEN_META, byId
+ * ═══════════════════════════════════════════════════════════════════════════════ */
 function genColor(gen){
   const meta = GEN_META.find(g=>g.id===gen);
   return meta ? meta.color : '#A6812E';
@@ -2728,7 +2896,26 @@ function selectFromSearch(id){
   jumpToNode(id);
 }
 
-/* ---------- Relationship graph + pathfinder ---------- */
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * § 路徑尋找器 (Pathfinder)
+ * Lines: ~2899-2980
+ *
+ * 使用 BFS 演算法找兩個節點之間的最短路徑
+ *
+ * 主要數據：
+ *   - ADJ{}           鄰接表（從 DATA 建構，包含 parents + links）
+ *
+ * 主要函數：
+ *   - findPath()              BFS 找最短路徑
+ *   - openPathfinder()        打開路徑面板
+ *   - renderPathSuggestions() 渲染起點/終點建議列表
+ *   - pickPathNode()          選擇路徑節點
+ *   - runPathfinder()         執行路徑搜尋並高亮
+ *   - highlightPath()         高亮顯示路徑
+ *   - clearPathHighlight()    清除高亮
+ *
+ * 依賴：DATA, byId, childrenOf()
+ * ═══════════════════════════════════════════════════════════════════════════════ */
 const ADJ = {};
 DATA.forEach(d=>{ ADJ[d.id] = new Set(); });
 DATA.forEach(d=>{
@@ -2866,7 +3053,21 @@ function clearPathHighlight(){
   clearTimeout(pathBannerTimer);
 }
 
-/* ---------- Timeline: only real historical figures with a known year ---------- */
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * § 時間軸 (Timeline)
+ * Lines: ~3056-3120
+ *
+ * 顯示有明確歷史年代的人物（year 欄位），按時間排序
+ *
+ * 主要函數：
+ *   - formatYear()            格式化年份顯示
+ *   - renderTimeline()        渲染時間軸
+ *   - jumpFromTimeline()      從時間軸跳轉到節點
+ *   - openTimeline()          打開時間軸面板
+ *   - closeTimeline()         關閉時間軸面板
+ *
+ * 依賴：DATA（有 year 欄位的節點）
+ * ═══════════════════════════════════════════════════════════════════════════════ */
 function formatYear(y){
   return y < 0 ? `西元前${Math.abs(y)}年` : `西元${y}年`;
 }
@@ -2931,7 +3132,29 @@ function closeTimeline(){
   document.getElementById('timelineOverlay').classList.remove('open');
 }
 
-/* ---------- Milestone quotes ---------- */
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * § 語錄與里程碑 (Quotes & Milestones)
+ * Lines: ~3135-3250
+ *
+ * 隨機語錄浮現、成就系統、scramble-reveal 打字動畫
+ *
+ * 主要數據：
+ *   - QUOTE_POOL[]    語錄池（共 197 句，格式 {text, author}')
+ *   - MILESTONES[]    里程碑配置（進度觸發點 + 對應語錄）
+ *
+ * 主要函數：
+ *   - pickRandomQuote()          隨機選擇語錄
+ *   - scrambleReveal()           打字機 reveal 動畫
+ *   - showMilestoneToast()       顯示里程碑 toast
+ *   - checkMilestone()           檢查是否觸發里程碑
+ *   - maybeSurfaceQuote()        隨機顯示語錄
+ *   - showCompletionMoment()     完成時刻特效
+ *   - closeCompletion()          關閉完成畫面
+ *
+ * 紅線：不可捏造真人未說過的話冒充引言
+ *
+ * 依賴：visited, QUOTE_POOL, playEggChime()
+ * ═══════════════════════════════════════════════════════════════════════════════ */
 const QUOTE_POOL = [
   {text:'存在即是被感知。', author:'喬治・貝克萊'},
   {text:'我們每個人的意識深處，都共享著同一套原型。', author:'榮格（意譯）'},
@@ -3235,7 +3458,23 @@ function closeCompletion(){
   document.getElementById('completionOverlay').classList.remove('open');
 }
 
-/* ---------- Consciousness Map: a personal constellation built from visit order ---------- */
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * § 意識地圖 (Consciousness Map / Mind Map)
+ * Lines: ~3461-3530
+ *
+ * 根據用戶探索順序生成個人專屬的星座圖
+ *
+ * 主要函數：
+ *   - openMindMap()         打開意識地圖
+ *   - closeMindMap()        關閉意識地圖
+ *   - jumpFromMindMap()     從地圖跳轉到節點
+ *   - renderMindMap()       渲染地圖內容（根據 visited 順序）
+ *
+ * 設計：按 visited 順序連接節點，形成用戶的「意識足跡」星座
+ *
+ * 依賴：visited, DATA, byId
+ * 相關：companion.js §影子系統（使用類似數據驅動渲染）
+ * ═══════════════════════════════════════════════════════════════════════════════ */
 function openMindMap(){
   renderMindMap();
   document.getElementById('mindMapOverlay').classList.add('open');
@@ -3449,7 +3688,17 @@ function renderMindMap(){
   content.innerHTML = svg;
 }
 
-/* ---------- Reset exploration progress ---------- */
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * § 重置功能 (Reset)
+ * Lines: ~3691-3720
+ *
+ * 重置探索進度（不影響彩蛋記錄）
+ *
+ * 主要函數：
+ *   - resetExploration()   清空 visited，保留彩蛋進度
+ *
+ * 注意：塵封軼聞的翻牌記錄不受影響
+ * ═══════════════════════════════════════════════════════════════════════════════ */
 function resetExploration(){
   const confirmed = confirm('確定要重置探索軌跡嗎？這會清空「已探索」進度與意識地圖上的星星，且無法復原。（塵封軼聞的翻牌記錄不受影響）');
   if(!confirmed) return;
@@ -3480,7 +3729,18 @@ function resetExploration(){
   renderMindMap();
 }
 
-/* ---------- Hidden treasures: things left for the curious to find ---------- */
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * § 隱藏彩蛋 (Hidden Treasures)
+ * Lines: ~3732-3800
+ *
+ * 開發者留下的小驚喜，用戶需自行探索發現
+ *
+ * 現有彩蛋：
+ *   1. Tab title easter egg - 分頁標題變化（「眾神仍在等你 👁️」）
+ *   2. Console easter egg - F12 控制台歡迎訊息 + `easterEgg()` 指令
+ *
+ * 相關：sound.js §音效系統（checkScaleEasterEgg 音階彩蛋）
+ * ═══════════════════════════════════════════════════════════════════════════════ */
 
 // 1. Tab title changes when you look away, and waits for you to come back
 (function setupTabTitleEasterEgg(){
@@ -3505,7 +3765,28 @@ window.easterEgg = function(){
   return '✦ 願你在探索裡，也找到自己的答案。';
 };
 
-/* ---------- Shadow Self-Awareness: 影子有沒有感情？ ---------- */
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * § 影子自我意識 (Shadow Self-Awareness)
+ * Lines: ~3768-3900
+ *
+ * 影子點擊對話、意識之鏡分支、哲學 Toast
+ *
+ * 主要數據：
+ *   - SHADOW_DIALOGUES{}   影子對話內容（按 philoScore 分級）
+ *   - MIRROR_FRAGMENTS[]   意識之鏡碎片素材
+ *
+ * 主要函數：
+ *   - showShadowDialogue()          顯示影子對話氣泡
+ *   - maybeShowShadowMonologue()    隨機顯示影子自語
+ *   - setupPhilosophyToastOnClick() 頁面點擊時隨機哲學 Toast
+ *   - setupConsciousnessMirror()    意識之鏡初始化
+ *   - triggerMirrorTransition()     觸發意識之鏡轉場效果
+ *
+ * 分級觸發：
+ *   - shadowClickCount >= 8 && philoScore >= 6 → 意識之鏡
+ *
+ * 依賴：companionData, playEtherealShimmer()
+ * ═══════════════════════════════════════════════════════════════════════════════ */
 
 // 意識之鏡：點擊影子時的對話內容
 const SHADOW_DIALOGUES = {
@@ -3895,6 +4176,19 @@ function triggerMirrorTransition() {
   }, 3500);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * § 初始化 (Initialization)
+ * Lines: ~4179-end
+ *
+ * DOMContentLoaded 後的初始化邏輯
+ *
+ * 初始化內容：
+ *   - setupPhilosophyToastOnClick()   哲學 Toast 監聽
+ *   - loadMirrorEffectSetting()       意識之鏡效果設定
+ *   - 影子點擊監聽（showShadowDialogue / triggerMirrorTransition）
+ *
+ * 包裹在 setTimeout(1000) 確保 DOM 完全就緒
+ * ═══════════════════════════════════════════════════════════════════════════════ */
 // 初始化影子自我意識系統
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
