@@ -2028,6 +2028,33 @@ function jumpToNode(id){
   selectNode(id);
 }
 
+function toggleHeaderMenu(){
+  const rope = document.getElementById('headerRope');
+  const btn = document.getElementById('headerMoreBtn');
+  const isOpen = rope.classList.toggle('open');
+
+  if(isOpen){
+    // 生成绳子上的按钮
+    const items = [
+      { icon: '🔍', label: '搜尋', action: 'openSearch()' },
+      { icon: '🌌', label: '意識地圖', action: 'openMindMap()' },
+      { icon: '🥚', label: '塵封軼聞', action: 'openEggWall()' },
+      { icon: '📅', label: '時間軸', action: 'openTimeline()' },
+      { icon: '🎭', label: '你的抉擇', action: 'openPhilo()' },
+      { icon: '✉️', label: '書寫', action: 'openLetter()' },
+      { icon: '◎', action: 'toggleMirrorEffect()', subtle: true },
+    ];
+
+    rope.innerHTML = items.map((item, i) => `
+      <div class="rope-segment" style="--delay:${i * 60}ms">
+        ${i > 0 ? '<div class="rope-line"></div>' : ''}
+        <button class="egg-toggle rope-bead ${item.subtle ? 'rope-bead-subtle' : ''}" onclick="${item.action}">${item.icon} ${item.label || ''}</button>
+      </div>
+    `).join('');
+  }
+  btn.classList.toggle('open');
+}
+
 const LEGEND_COLLAPSE_KEY = 'greekMythTree_legendCollapsed_v1';
 function toggleLegend(){
   const legend = document.getElementById('legend');

@@ -57,15 +57,13 @@
       <a href="index.html" class="home-btn"></a>
   </div>
   <p class="oracle-sub">From chaos, the gods awaken...<br>From myth, the world breathes...</p>
-  <div class="header-controls">
-    <button class="egg-toggle" id="eggToggle" onclick="openEggWall()">🥚 塵封軼聞 <span class="btn-en">Forgotten Tales</span></button>
-    <button class="egg-toggle" id="searchToggle" onclick="openSearch()">🔍 搜尋 <span class="btn-en">Search</span></button>
-    <button class="egg-toggle" id="timelineToggle" onclick="openTimeline()">📅 時間軸 <span class="btn-en">Timeline</span></button>
-    <button class="egg-toggle" id="mindMapToggle" onclick="openMindMap()">🌌 意識地圖 <span class="btn-en">Consciousness Map</span></button>
-    <button class="egg-toggle" id="philoToggle" onclick="openPhilo()">🎭 你的抉擇 <span class="btn-en">Your Choice</span></button>
-    <button class="egg-toggle" id="letterToggle" onclick="openLetter()">✉️ 書寫 <span class="btn-en">Write</span></button>
-    <button class="egg-toggle" id="mirrorToggle" onclick="toggleMirrorEffect()" title="時空效果" style="padding: 8px 10px; font-size: 11px; opacity: 0.35;">◎</button>
+  <div class="header-key-wrap">
+    <div class="header-key-hole" id="headerMoreBtn" onclick="toggleHeaderMenu()">
+      <span class="header-key-line"></span>
+      <span class="header-key-hole-line"></span>
+    </div>
   </div>
+  <div class="header-rope" id="headerRope"></div>
 </header>
 
 <div class="egg-overlay" id="eggOverlay" onclick="if(event.target===this) closeEggWall()">
