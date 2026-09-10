@@ -288,6 +288,54 @@ header p{
   transition:opacity .3s ease;
 }
 
+/* Keyhole Particles - 煙花迸發效果 */
+.keyhole-particles{
+  position:absolute;
+  top:50%;
+  left:50%;
+  width:0;
+  height:0;
+  pointer-events:none;
+  z-index:10;
+}
+.keyhole-particle{
+  position:absolute;
+  width:var(--size, 2px);
+  height:var(--size, 2px);
+  border-radius:50%;
+  background:rgba(201,168,76,0.95);
+  box-shadow:
+    0 0 3px 1px rgba(201,168,76,0.7),
+    0 0 6px 2px rgba(201,168,76,0.3);
+  animation:keyholeBurst var(--dur, 0.8s) ease-out forwards;
+}
+.keyhole-particle.sparkle{
+  background:rgba(255,255,255,0.98);
+  box-shadow:
+    0 0 4px 2px rgba(255,250,220,0.9),
+    0 0 8px 3px rgba(255,240,200,0.5);
+}
+.keyhole-particle.large{
+  width:3px;
+  height:3px;
+  box-shadow:
+    0 0 5px 2px rgba(201,168,76,0.8),
+    0 0 10px 4px rgba(201,168,76,0.4);
+}
+@keyframes keyholeBurst{
+  0%{
+    opacity:1;
+    transform:translate(0, 0) scale(1);
+  }
+  15%{
+    opacity:1;
+  }
+  100%{
+    opacity:0;
+    transform:translate(var(--tx), var(--ty)) scale(0.2);
+  }
+}
+
 .header-rope{
   display:flex;
   flex-direction:column;

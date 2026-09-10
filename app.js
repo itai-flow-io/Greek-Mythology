@@ -2053,7 +2053,52 @@ function toggleHeaderMenu(){
     `).join('');
   }
   btn.classList.toggle('open');
+  burstKeyholeParticles();
 }
+
+// Keyhole 微小星星迸發特效 - 煙花效果
+function burstKeyholeParticles(){
+  const container = document.getElementById('keyholeParticles');
+  if(!container) return;
+
+  // 清除舊粒子
+  container.innerHTML = '';
+
+  // 生成 12-16 個粒子，像煙花一樣
+  const count = 12 + Math.floor(Math.random() * 5);
+
+  for(let i = 0; i < count; i++){
+    const p = document.createElement('div');
+    const isSparkle = Math.random() < 0.4; // 40% 白光閃爍
+    const isLarge = Math.random() < 0.2; // 20% 大粒子
+
+    // 煙花效果：向上偏斜的隨機方向，射程更遠
+    const baseAngle = (Math.PI * 2 / count) * i;
+    const angleJitter = (Math.random() - 0.5) * 0.8; // 更大的角度散射
+    const angle = baseAngle + angleJitter - Math.PI * 0.6; // 向上偏移
+
+    // 射程 40-80px，像煙花一樣
+    const distance = 40 + Math.random() * 45;
+    const tx = Math.cos(angle) * distance;
+    const ty = Math.sin(angle) * distance;
+
+    p.className = 'keyhole-particle' + (isSparkle ? ' sparkle' : '') + (isLarge ? ' large' : '');
+    p.style.setProperty('--tx', tx + 'px');
+    p.style.setProperty('--ty', ty + 'px');
+    p.style.setProperty('--size', isLarge ? '3px' : '2px');
+    p.style.animationDelay = (Math.random() * 80) + 'ms';
+    p.style.animationDuration = (0.6 + Math.random() * 0.4) + 's';
+
+    container.appendChild(p);
+  }
+
+  // 動畫結束後清理
+  setTimeout(() => {
+    container.innerHTML = '';
+  }, 1200);
+}
+
+// 在 toggleHeaderMenu 中調用
 
 const LEGEND_COLLAPSE_KEY = 'greekMythTree_legendCollapsed_v1';
 function toggleLegend(){
