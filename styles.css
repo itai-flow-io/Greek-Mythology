@@ -2323,21 +2323,6 @@ footer{
     padding:4px 10px;
     font-size:10px;
   }
-  .header-key-hole{
-    width:20px;
-    height:32px;
-  }
-  .header-key-hole::before{
-    width:18px;
-    height:18px;
-    left:1px;
-  }
-  .header-key-hole::after{
-    top:9px;
-    left:7px;
-    width:6px;
-    height:12px;
-  }
   /* 塵封軼聞手机端优化 */
   .egg-card{
     box-shadow:
