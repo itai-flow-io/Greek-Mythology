@@ -2057,7 +2057,7 @@ function toggleHeaderMenu(){
       { icon: '📅', label: '時間軸', action: 'openTimeline()' },
       { icon: '🎭', label: '你的抉擇', action: 'openPhilo()' },
       { icon: '✉️', label: '書寫', action: 'openLetter()' },
-      { icon: '◎', action: 'toggleMirrorEffect()', subtle: true },
+      { icon: '✦', action: 'toggleMirrorEffect()', subtle: true },
     ];
 
     rope.innerHTML = items.map((item, i) => `
