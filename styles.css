@@ -986,164 +986,215 @@ header p{
   opacity:0.7;
 }
 
-.egg-grid{
-  display:grid;
-  grid-template-columns:repeat(3, 1fr);
-  gap:10px;
-}
-@media (min-width:700px){
-  .egg-grid{ grid-template-columns:repeat(4, 1fr); }
-}
+/* ========== 抽卡系統 (Card Draw System) ========== */
 
-.egg-card{
-  aspect-ratio:1 / 1;
-  position:relative;
-  cursor:pointer;
-  border-radius:18px;
-  background:linear-gradient(160deg,
-    rgba(255, 255, 255, 0.25) 0%,
-    rgba(255, 255, 255, 0.1) 30%,
-    rgba(255, 255, 255, 0.05) 70%,
-    rgba(255, 255, 255, 0.12) 100%);
-  border:1px solid rgba(255, 255, 255, 0.25);
-  backdrop-filter:blur(8px) saturate(1.1);
-  -webkit-backdrop-filter:blur(8px) saturate(1.1);
-  overflow:hidden;
-  touch-action:none;
-  user-select:none;
-  -webkit-user-select:none;
-  -webkit-touch-callout:none;
-  will-change:transform;
-  box-shadow:
-    0 0 15px rgba(255, 255, 255, 0.08),
-    0 6px 24px rgba(0, 0, 0, 0.2),
-    inset 0 1px 2px rgba(255, 255, 255, 0.4),
-    inset 0 -1px 3px rgba(0, 0, 0, 0.08);
-  transition:transform .35s cubic-bezier(.34,1.56,.64,1), box-shadow .3s ease, background .3s ease;
-}
-/* Glass shine reflection - diagonal light streak */
-.egg-card::before{
-  content:'';
-  position:absolute;
-  top:-20%;
-  left:-20%;
-  width:140%;
-  height:140%;
-  background:linear-gradient(135deg,
-    rgba(255, 255, 255, 0.5) 0%,
-    rgba(255, 255, 255, 0.2) 30%,
-    transparent 60%);
-  pointer-events:none;
-  z-index:1;
-  border-radius:22px;
-}
-/* Fragment/shard silhouettes — 4 variants cycled per card for visual variety, instead of a uniform rounded square */
-.egg-card.revealed{
-  transform:scale(1.03) rotate(-1deg);
-  box-shadow:
-    0 0 25px rgba(201, 168, 76, 0.2),
-    0 8px 24px rgba(0, 0, 0, 0.18),
-    inset 0 1px 2px rgba(255, 255, 255, 0.5),
-    inset 0 -2px 4px rgba(0, 0, 0, 0.04);
-  background:linear-gradient(160deg,
-    rgba(255, 255, 255, 0.35) 0%,
-    rgba(255, 255, 255, 0.15) 30%,
-    rgba(255, 255, 255, 0.06) 70%,
-    rgba(255, 255, 255, 0.2) 100%);
-}
-.egg-card.revealed:hover{ transform:scale(1.05) rotate(-1deg); }
-.egg-content{
-  position:absolute;
-  inset:0;
+.egg-progress-bar{
   display:flex;
   flex-direction:column;
   align-items:center;
-  justify-content:flex-start;
-  gap:5px;
-  padding:12px 10px 10px;
-  overflow-y:auto;
-  scrollbar-width:thin;
-  scrollbar-color:rgba(255, 255, 255, 0.3) transparent;
-  z-index:2;
+  gap:6px;
+  margin-bottom:20px;
 }
-.egg-content::-webkit-scrollbar{ width:4px; }
-.egg-content::-webkit-scrollbar-thumb{ background:rgba(255, 255, 255, 0.3); border-radius:4px; }
-.egg-content .egg-emoji{ font-size:20px; flex-shrink:0; filter:drop-shadow(0 1px 1px rgba(0,0,0,0.2)); }
-.egg-content .egg-text{
-  font-family:'Noto Serif TC', serif;
-  font-weight:500;
+.egg-progress-text{
+  font-family:'Noto Sans TC', sans-serif;
   font-size:12px;
-  line-height:1.55;
-  letter-spacing:0.04em;
-  /* 金色淺色系，深色底也能清晰閱讀 */
-  color:#F5E6C8;
-  text-shadow: 0 0 8px rgba(200, 160, 80, 0.5);
+  font-weight:600;
+  color:rgba(196, 191, 214, 0.9);
+  letter-spacing:0.03em;
 }
-.egg-num{
+.egg-progress-track{
+  width:min(240px, 70vw);
+  height:6px;
+  background:rgba(255,255,255,0.1);
+  border-radius:3px;
+  overflow:hidden;
+}
+.egg-progress-fill{
+  height:100%;
+  width:0%;
+  background:linear-gradient(90deg, var(--gold), #e8c068);
+  border-radius:3px;
+  transition:width .4s ease;
+}
+
+/* 抽卡區域 */
+.egg-draw-area{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:12px;
+  margin-bottom:24px;
+}
+
+/* 翻轉卡片 */
+.egg-draw-card{
+  width:min(260px, 72vw);
+  aspect-ratio:3 / 4;
+  perspective:1000px;
+  cursor:pointer;
+}
+.egg-card-front, .egg-card-back{
   position:absolute;
-  top:6px;
-  left:8px;
-  z-index:3;
+  inset:0;
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+  border-radius:18px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  transition:transform .6s cubic-bezier(.4, 0, .2, 1);
+}
+.egg-card-front{
+  background:linear-gradient(160deg,
+    rgba(255,255,255,0.25) 0%,
+    rgba(255,255,255,0.1) 30%,
+    rgba(255,255,255,0.05) 70%,
+    rgba(255,255,255,0.12) 100%);
+  border:1px solid rgba(255,255,255,0.25);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  box-shadow:
+    0 0 20px rgba(255,255,255,0.1),
+    0 12px 40px rgba(0,0,0,0.3),
+    inset 0 1px 2px rgba(255,255,255,0.4);
+}
+.egg-card-mystery{
   font-family:'Cinzel', serif;
-  font-size:9px;
-  font-weight:500;
+  font-size:72px;
+  font-weight:700;
+  color:rgba(245,230,200,0.9);
+  text-shadow:0 0 30px rgba(255,220,150,0.5);
+  line-height:1;
+}
+.egg-card-hint{
+  font-family:'Noto Sans TC', sans-serif;
+  font-size:12px;
+  color:rgba(154,147,184,0.8);
+  margin-top:8px;
+  letter-spacing:0.1em;
+}
+.egg-card-back{
+  background:linear-gradient(160deg,
+    rgba(40,35,60,0.95) 0%,
+    rgba(25,22,45,0.95) 100%);
+  border:1px solid rgba(201,168,76,0.3);
+  transform:rotateY(180deg);
+  padding:20px;
+  box-shadow:
+    0 0 30px rgba(201,168,76,0.15),
+    0 12px 40px rgba(0,0,0,0.4),
+    inset 0 1px 1px rgba(255,255,255,0.1);
+}
+.egg-draw-card.flipped .egg-card-front{ transform:rotateY(180deg); }
+.egg-draw-card.flipped .egg-card-back{ transform:rotateY(0deg); }
+
+.egg-card-content{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:14px;
+  text-align:center;
+}
+.egg-card-icon{
+  font-size:48px;
+  filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+.egg-card-text{
+  font-family:'Noto Serif TC', serif;
+  font-size:14px;
+  line-height:1.8;
+  color:#F5E6C8;
+  text-shadow:0 0 8px rgba(200,160,80,0.3);
+  margin:0;
+}
+
+.egg-draw-hint{
+  font-size:11px;
+  color:rgba(154,147,184,0.7);
+  font-family:'Noto Sans TC', sans-serif;
   letter-spacing:0.08em;
-  color:var(--gold-soft);
-  text-shadow:0 1px 2px rgba(0,0,0,0.3), 0 0 8px rgba(201, 168, 76, 0.4);
-  pointer-events:none;
 }
-.egg-card.revealed .egg-num{
-  color:rgba(150, 120, 80, 0.8);
-  text-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.5),
-    0 -1px 1px rgba(0, 0, 0, 0.1);
+
+/* 已揭曉區域 */
+.egg-revealed-section{
+  margin-top:8px;
 }
-.egg-dust{
-  position:absolute;
-  inset:0;
-  z-index:2;
-  background:
-    linear-gradient(160deg,
-      rgba(50, 45, 40, 0.9) 0%,
-      rgba(35, 30, 25, 0.95) 100%);
-  opacity:1;
-  transition:opacity .12s linear;
+.egg-revealed-title{
+  font-family:'Cinzel', serif;
+  font-size:11px;
+  letter-spacing:0.12em;
+  color:rgba(154,147,184,0.8);
+  margin:0 0 10px;
+  text-align:center;
 }
-.egg-card.revealed .egg-dust{ opacity:0 !important; pointer-events:none; transition:opacity .4s ease; }
-/* Glass refraction sweep — plays once across the card when revealed */
-.egg-shimmer{
-  position:absolute;
-  inset:0;
-  z-index:4;
-  pointer-events:none;
-  background:linear-gradient(115deg,
-    transparent 35%,
-    rgba(255, 255, 255, 0.7) 45%,
-    rgba(255, 255, 255, 0.9) 50%,
-    rgba(255, 255, 255, 0.7) 55%,
-    transparent 65%);
-  background-size:300% 300%;
-  background-position:-100% -100%;
-  opacity:0;
+.egg-revealed-list{
+  display:flex;
+  gap:10px;
+  overflow-x:auto;
+  padding:8px 4px;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(255,255,255,0.2) transparent;
+  -webkit-overflow-scrolling:touch;
 }
-.egg-card.revealed .egg-shimmer{
-  animation:egg-shimmer-sweep .9s ease-out forwards;
+.egg-revealed-list::-webkit-scrollbar{ height:4px; }
+.egg-revealed-list::-webkit-scrollbar-thumb{ background:rgba(255,255,255,0.2); border-radius:2px; }
+.egg-revealed-item{
+  flex-shrink:0;
+  width:64px;
+  aspect-ratio:1;
+  border-radius:10px;
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.15);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  padding:6px;
+  cursor:default;
+  transition:transform .2s ease, box-shadow .2s ease;
 }
-@keyframes egg-shimmer-sweep{
-  0%{ opacity:1; background-position:-100% -100%; }
-  60%{ opacity:1; }
-  100%{ opacity:0; background-position:100% 100%; }
+.egg-revealed-item:hover{
+  transform:translateY(-2px);
+  box-shadow:0 4px 12px rgba(0,0,0,0.2);
 }
-.egg-card:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
-@media (prefers-reduced-motion: reduce){
-  .egg-dust, .egg-card{ transition:none; }
-  .egg-card.revealed .egg-dust{ transition:none; }
-  .egg-card.revealed .egg-shimmer{ animation:none; display:none; }
-  .egg-card.revealed{ transform:none; }
-  /* 塵封軼聞手机端 */
-  .egg-header h2{ font-size:16px; }
-  .egg-header{ margin-bottom:18px; }
-  .egg-sub{ font-size:10px; }
+.egg-revealed-item .revealed-icon{ font-size:20px; }
+.egg-revealed-item .revealed-num{
+  font-family:'Cinzel', serif;
+  font-size:8px;
+  color:rgba(154,147,184,0.6);
+  letter-spacing:0.05em;
+}
+
+/* 一鍵揭曉按鈕 */
+.egg-reveal-all-btn{
+  display:block;
+  margin:16px auto 0;
+  padding:10px 20px;
+  background:rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.15);
+  border-radius:8px;
+  color:rgba(154,147,184,0.8);
+  font-family:'Cinzel', serif;
+  font-size:11px;
+  letter-spacing:0.1em;
+  cursor:pointer;
+  transition:all .3s ease;
+}
+.egg-reveal-all-btn:hover{
+  background:rgba(255,255,255,0.12);
+  color:rgba(200,190,220,0.95);
+  border-color:rgba(255,255,255,0.25);
+}
+.egg-reveal-all-btn:active{ transform:scale(0.97); }
+
+/* 完成全部 */
+.egg-draw-card.completed .egg-card-front .egg-card-mystery{
+  font-size:36px;
+}
+.egg-draw-card.completed .egg-card-front .egg-card-hint{
+  font-size:11px;
 }
 
 .sparkle{
@@ -2281,25 +2332,16 @@ footer{
     padding:4px 10px;
     font-size:10px;
   }
-  /* 塵封軼聞手机端优化 */
-  .egg-card{
-    box-shadow:
-      0 0 15px rgba(255, 255, 255, 0.1),
-      0 4px 20px rgba(0, 0, 0, 0.3);
-    backdrop-filter:blur(8px);
+  /* 抽卡系統手机端优化 */
+  .egg-draw-card{
+    width:min(220px, 80vw);
   }
-  .egg-card::before{ height:35%; }
-  .egg-content{
-    padding:10px 8px 8px;
-    gap:4px;
+  .egg-card-mystery{ font-size:56px; }
+  .egg-card-icon{ font-size:36px; }
+  .egg-card-text{ font-size:13px; }
+  .egg-revealed-item{
+    width:52px;
   }
-  .egg-content .egg-emoji{ font-size:18px; }
-  .egg-content .egg-text{
-    font-size:10px;
-    line-height:1.5;
-  }
-  .egg-num{ font-size:8px; }
-  .egg-grid{ gap:10px; padding:8px; }
 }
 
 /* ---------- Companion Shadow: the quiet witness ---------- */

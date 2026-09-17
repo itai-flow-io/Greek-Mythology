@@ -2508,15 +2508,16 @@ if(document.fonts && document.fonts.ready){
  *   - EGG_NODE_MAP     彩蛋與節點的對應關係（85 條有標記）
  *
  * 主要函數：
- *   - renderEggGrid()        渲染拼圖格子
- *   - setupDustWipe()        設定擦灰塵互動（拖曳 240px 揭曉）
- *   - revealEgg()            揭曉單一彩蛋
- *   - openEggWall()          打開彩蛋牆
- *   - jumpToEggFromNode()    從節點詳情頁快速跳轉
+ *   - initEggDraw()         初始化抽卡系統
+ *   - drawEggCard()         抽取一張隨機卡片
+ *   - addToRevealedList()   加入已揭曉列表
+ *   - revealAllEggs()       一鍵揭曉全部
+ *   - openEggWall()         打開抽卡介面
+ *   - closeEggWall()        關閉抽卡介面
  *
  * 彩蛋觸發條件：
- *   - 滑鼠拖曳：累積 240px 距離自動清除
- *   - 鍵盤：Tab 聚焦 + Enter 直接揭曉
+ *   - 點擊抽卡：隨機揭曉一張未揭曉的卡片
+ *   - 一鍵揭曉：一次揭曉所有剩餘卡片
  *
  * 全收集獎勵：96/96 全部發現觸發專屬提示
  *
@@ -2663,143 +2664,171 @@ try{
   if(raw) discoveredEggs = new Set(JSON.parse(raw));
 }catch(e){ /* ignore */ }
 
-/* ---------- Puzzle-piece geometry for the egg grid ---------- */
-// Deterministic per-edge "who owns the bite" decision — order matters, always called with the
-// canonical (earlier) cell first, so both neighboring cells derive the same answer independently.
-function eggEdgeBiteOwner(r1, c1, r2, c2){
-  const key = r1+'_'+c1+'_'+r2+'_'+c2;
-  let seed = 7;
-  for(let i=0;i<key.length;i++){ seed = (seed * 31 + key.charCodeAt(i)) % 999983; }
-  seed = (seed * 9301 + 49297) % 233280;
-  return (seed / 233280) > 0.5;
-}
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * § 塵封軼聞抽卡系統 (Card Draw System)
+ * ═══════════════════════════════════════════════════════════════════════════════ */
 
-function eggGridCols(){
-  return (window.matchMedia && window.matchMedia('(min-width:700px)').matches) ? 4 : 3;
-}
+let currentEggIndex = -1; // 當前抽到的卡片索引
+let isFlipped = false;
 
-function layoutPuzzlePieces(cols, count){
-  const rows = Math.ceil(count / cols);
-  const pieces = [];
-  for(let i=0;i<count;i++){
-    const r = Math.floor(i / cols), c = i % cols;
-    const top    = (r === 0) ? false : !eggEdgeBiteOwner(r-1, c, r, c);
-    const left   = (c === 0) ? false : !eggEdgeBiteOwner(r, c-1, r, c);
-    const right  = (c === cols-1) ? false : eggEdgeBiteOwner(r, c, r, c+1);
-    const bottom = (r === rows-1) ? false : eggEdgeBiteOwner(r, c, r+1, c);
-    pieces.push({top, right, bottom, left});
-  }
-  return pieces;
-}
-
-// Diamond glass panels with beveled edges
-function makePuzzlePiecePath(top, right, bottom, left, size){
-  const bevel = size * 0.08;
-  // 使用圆角矩形，不再使用菱形
-  const r = bevel;
-  return 'M '+r+' 0 H '+(size-r)+' Q '+size+' 0 '+size+' '+r+' V '+(size-r)+' Q '+size+' '+size+' '+(size-r)+' '+size+' H '+r+' Q 0 '+size+' 0 '+(size-r)+' V '+r+' Q 0 0 '+r+' 0 Z';
-}
-
-function applyPuzzleClipPaths(){
-  // 不再使用clipPath，让CSS的border-radius处理圆角
-  const grid = document.getElementById('eggGrid');
-  if(!grid) return;
-  grid.querySelectorAll('.egg-card').forEach(card=>{
-    card.style.clipPath = 'none';
-  });
-}
-
-function renderEggGrid(){
-  const grid = document.getElementById('eggGrid');
-  if(!grid || grid.childElementCount) { updateEggProgress(); return; }
-  EASTER_EGGS.forEach((egg, i)=>{
-    const card = document.createElement('div');
-    card.className = 'egg-card' + (discoveredEggs.has(i) ? ' revealed' : '');
-    card.dataset.index = i;
-    card.tabIndex = 0;
-    card.setAttribute('role', 'button');
-    card.setAttribute('aria-label', discoveredEggs.has(i) ? egg.text : '塵封的軼聞，滑動或按 Enter 拂去塵埃');
-    card.innerHTML = `
-      <div class="egg-content">
-        <span class="egg-emoji">${egg.icon}</span>
-        <span class="egg-text">${egg.text}</span>
-      </div>
-      <span class="egg-num">${String(i + 1).padStart(3, '0')}</span>
-      <div class="egg-dust"></div>
-      <div class="egg-shimmer"></div>
-    `;
-    setupDustWipe(card, i);
-    grid.appendChild(card);
-  });
-  applyPuzzleClipPaths();
-  let lastCols = eggGridCols();
-  if(window.matchMedia){
-    window.matchMedia('(min-width:700px)').addEventListener('change', ()=>{
-      const nowCols = eggGridCols();
-      if(nowCols !== lastCols){ lastCols = nowCols; applyPuzzleClipPaths(); }
-    });
-  }
+function initEggDraw(){
+  // 初始化已揭曉列表
+  renderRevealedList();
   updateEggProgress();
-}
-
-function setupDustWipe(card, i){
-  const dust = card.querySelector('.egg-dust');
-  if(!dust || discoveredEggs.has(i)) return; // already revealed, no gesture needed
-
-  const THRESHOLD = 240;
-  let wiping = false;
-  let lastX = 0, lastY = 0;
-  let accumulated = 0;
-
-  function onPointerDown(ev){
-    ev.preventDefault();
-    card.focus();
-    wiping = true;
-    lastX = ev.clientX; lastY = ev.clientY;
-    if(card.setPointerCapture){ try{ card.setPointerCapture(ev.pointerId); }catch(e){} }
-  }
-  function onPointerMove(ev){
-    if(!wiping) return;
-    const dx = ev.clientX - lastX, dy = ev.clientY - lastY;
-    accumulated += Math.sqrt(dx*dx + dy*dy);
-    lastX = ev.clientX; lastY = ev.clientY;
-    dust.style.opacity = Math.max(0, 1 - accumulated / THRESHOLD);
-    if(accumulated >= THRESHOLD) revealEgg(i, card);
-  }
-  function onPointerEnd(){ wiping = false; }
-
-  card.addEventListener('pointerdown', onPointerDown);
-  card.addEventListener('pointermove', onPointerMove);
-  card.addEventListener('pointerup', onPointerEnd);
-  card.addEventListener('pointercancel', onPointerEnd);
-  card.addEventListener('keydown', (ev)=>{
-    if(ev.key === 'Enter' || ev.key === ' '){
-      ev.preventDefault();
-      revealEgg(i, card);
+  // 檢查是否全部揭曉
+  if(discoveredEggs.size >= EASTER_EGGS.length){
+    document.getElementById('eggDrawCard')?.classList.add('completed');
+    const front = document.querySelector('.egg-card-front');
+    if(front){
+      front.querySelector('.egg-card-mystery').textContent = '✨';
+      front.querySelector('.egg-card-hint').textContent = '全部揭曉';
     }
-  });
+    const btn = document.getElementById('eggRevealAllBtn');
+    if(btn) btn.style.display = 'none';
+  }
 }
 
-function revealEgg(i, card){
-  if(card.classList.contains('revealed')) return;
-  card.classList.add('revealed');
-  card.setAttribute('aria-label', EASTER_EGGS[i].text);
-  if(!discoveredEggs.has(i)){
-    discoveredEggs.add(i);
-    try{ localStorage.setItem(EGG_KEY, JSON.stringify([...discoveredEggs])); }catch(e){}
-    const rect = card.getBoundingClientRect();
-    spawnSparkles(rect.left + rect.width/2, rect.top + rect.height/2);
-    playToastSound();
+function drawEggCard(){
+  const drawCard = document.getElementById('eggDrawCard');
+  const hint = document.getElementById('eggDrawHint');
+  if(!drawCard) return;
+
+  // 如果已經翻開，先重置
+  if(isFlipped){
+    resetDrawCard();
+    return;
+  }
+
+  // 檢查是否還有未揭曉的卡
+  const unrevealed = [];
+  EASTER_EGGS.forEach((_, i) => { if(!discoveredEggs.has(i)) unrevealed.push(i); });
+
+  if(unrevealed.length === 0){
+    // 全部揭曉
+    drawCard.classList.add('completed');
+    return;
+  }
+
+  // 隨機選擇一張
+  currentEggIndex = unrevealed[Math.floor(Math.random() * unrevealed.length)];
+  const egg = EASTER_EGGS[currentEggIndex];
+
+  // 顯示內容（背面）
+  document.getElementById('eggCardIcon').textContent = egg.icon;
+  document.getElementById('eggCardText').textContent = egg.text;
+
+  // 翻轉卡片
+  isFlipped = true;
+  drawCard.classList.add('flipped');
+  if(hint) hint.style.display = 'block';
+
+  // 標記為已揭曉
+  discoveredEggs.add(currentEggIndex);
+  try{ localStorage.setItem(EGG_KEY, JSON.stringify([...discoveredEggs])); }catch(e){}
+
+  // 動畫完成後加入列表
+  setTimeout(()=>{
+    addToRevealedList(currentEggIndex);
     updateEggProgress();
+    spawnSparkles(window.innerWidth/2, window.innerHeight/3);
+    playToastSound();
+
     if(discoveredEggs.size === EASTER_EGGS.length){
       setTimeout(()=>{
         showMilestoneToast({
-          text:'塵歸塵，土歸土——但你已經把每一粒都親手拂去過了。',
-          author:'🧩 塵封軼聞・全數拂去'
+          text:'塵歸塵，土歸土——但你已經把每一粒都親手揭曉過了。',
+          author:'🥚 塵封軼聞・全部揭曉'
         });
-      }, 500);
+        drawCard.classList.add('completed');
+        const front = document.querySelector('.egg-card-front');
+        if(front){
+          front.querySelector('.egg-card-mystery').textContent = '✨';
+          front.querySelector('.egg-card-hint').textContent = '全部揭曉';
+        }
+      }, 600);
     }
+  }, 700);
+}
+
+function flipEggCard(){
+  // 點擊翻轉（目前在這個實現中，drawEggCard已包含翻轉）
+  // 這個函數預留給點擊背面的情況
+}
+
+function addToRevealedList(index){
+  const list = document.getElementById('eggRevealedList');
+  const section = document.getElementById('eggRevealedSection');
+  const btn = document.getElementById('eggRevealAllBtn');
+  if(!list) return;
+
+  const egg = EASTER_EGGS[index];
+  const item = document.createElement('div');
+  item.className = 'egg-revealed-item';
+  item.innerHTML = `
+    <span class="revealed-icon">${egg.icon}</span>
+    <span class="revealed-num">${String(index + 1).padStart(3, '0')}</span>
+  `;
+  item.title = egg.text;
+  list.appendChild(item);
+
+  // 顯示區域
+  if(section) section.style.display = 'block';
+  if(btn) btn.style.display = discoveredEggs.size < EASTER_EGGS.length ? 'block' : 'none';
+
+  // 滾動到最新
+  list.scrollLeft = list.scrollWidth;
+}
+
+function renderRevealedList(){
+  const list = document.getElementById('eggRevealedList');
+  if(!list || list.childElementCount > 0) return;
+
+  discoveredEggs.forEach(i => addToRevealedList(i));
+}
+
+function resetDrawCard(){
+  const drawCard = document.getElementById('eggDrawCard');
+  const hint = document.getElementById('eggDrawHint');
+  if(drawCard){
+    drawCard.classList.remove('flipped');
+    isFlipped = false;
   }
+  if(hint) hint.style.display = 'none';
+}
+
+function revealAllEggs(){
+  // 一鍵揭曉剩餘所有
+  const unrevealed = [];
+  EASTER_EGGS.forEach((_, i) => { if(!discoveredEggs.has(i)) unrevealed.push(i); });
+
+  unrevealed.forEach((idx, n) => {
+    setTimeout(()=>{
+      discoveredEggs.add(idx);
+      addToRevealedList(idx);
+      updateEggProgress();
+    }, n * 100);
+  });
+
+  setTimeout(()=>{
+    try{ localStorage.setItem(EGG_KEY, JSON.stringify([...discoveredEggs])); }catch(e){}
+    const drawCard = document.getElementById('eggDrawCard');
+    if(drawCard){
+      drawCard.classList.add('completed');
+      const front = document.querySelector('.egg-card-front');
+      if(front){
+        front.querySelector('.egg-card-mystery').textContent = '✨';
+        front.querySelector('.egg-card-hint').textContent = '全部揭曉';
+      }
+    }
+    const btn = document.getElementById('eggRevealAllBtn');
+    if(btn) btn.style.display = 'none';
+    spawnSparkles(window.innerWidth/2, window.innerHeight/3);
+    playToastSound();
+    showMilestoneToast({
+      text:'塵歸塵，土歸土——但你已經把每一粒都親手揭曉過了。',
+      author:'🥚 塵封軼聞・全部揭曉'
+    });
+  }, unrevealed.length * 100 + 200);
 }
 
 function spawnSparkles(x, y){
@@ -2822,68 +2851,57 @@ function spawnSparkles(x, y){
 }
 
 function updateEggProgress(){
-  const el = document.getElementById('eggProgress');
-  if(!el) return;
-  el.textContent = `已發現 ${discoveredEggs.size} / ${EASTER_EGGS.length}`;
+  const textEl = document.getElementById('eggProgressText');
+  const fillEl = document.getElementById('eggProgressFill');
+  if(!textEl) return;
+
+  const total = EASTER_EGGS.length;
+  const found = discoveredEggs.size;
+  const pct = (found / total) * 100;
+
+  textEl.textContent = `已揭曉 ${found} / ${total}`;
+  if(fillEl) fillEl.style.width = pct + '%';
 }
 
 function jumpToEggFromNode(nodeId){
-  const eggIndices = NODE_EGG_LOOKUP[nodeId];
-  if(!eggIndices || !eggIndices.length) return;
-  const targetIndex = eggIndices[0];
+  // 在抽卡系統中，快速跳轉功能簡化為直接打開抽卡介面
   openEggWall();
-  setTimeout(()=>{
-    const card = document.querySelector('.egg-card[data-index="'+targetIndex+'"]');
-    if(!card) return;
-    card.scrollIntoView({behavior:'smooth', block:'center'});
-    revealEgg(targetIndex, card);
-    card.style.outline = '2px solid var(--gold)';
-    card.style.outlineOffset = '3px';
-    setTimeout(()=>{ card.style.outline = ''; card.style.outlineOffset = ''; }, 2200);
-  }, 150);
 }
 
 function openEggWall(){
-  renderEggGrid();
+  initEggDraw();
   document.getElementById('eggOverlay').classList.add('open');
 }
 
 function closeEggWall(){
   document.getElementById('eggOverlay').classList.remove('open');
+  // 重置卡片狀態
+  setTimeout(()=> resetDrawCard(), 300);
+}
+
+function spawnSparkles(x, y){
+  if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const glyphs = ['✦','✧','⋆','✨'];
+  for(let k=0; k<8; k++){
+    const s = document.createElement('span');
+    s.className = 'sparkle';
+    s.textContent = glyphs[k % glyphs.length];
+    const angle = (Math.PI * 2 * k) / 8;
+    const dist = 40 + Math.random()*30;
+    s.style.setProperty('--sx', Math.cos(angle)*dist + 'px');
+    s.style.setProperty('--sy', Math.sin(angle)*dist + 'px');
+    s.style.left = x + 'px';
+    s.style.top = y + 'px';
+    s.style.color = k % 2 === 0 ? '#E8C468' : '#fff';
+    document.body.appendChild(s);
+    setTimeout(()=> s.remove(), 850);
+  }
 }
 
 // 重置尘封轶闻进度（调试用）
 function resetEggs(){
   localStorage.removeItem('easterEggs');
   location.reload();
-}
-
-// 强制显示未翻开状态（同时清空localStorage）
-function forceUnrevealed(){
-  localStorage.removeItem('easterEggs');
-  discoveredEggs = new Set();
-  const cards = document.querySelectorAll('.egg-card');
-  cards.forEach(card => {
-    card.classList.remove('revealed');
-    card.dataset.index && setupDustWipe(card, parseInt(card.dataset.index));
-  });
-  updateEggProgress();
-}
-
-// 测试：显示未翻开的卡片
-function showUnrevealed(){
-  const cards = document.querySelectorAll('.egg-card');
-  cards.forEach(card => {
-    card.classList.remove('revealed');
-    const dust = card.querySelector('.egg-dust');
-    if(dust) dust.style.opacity = '1';
-  });
-}
-
-// 恢复翻开状态
-function restoreRevealed(){
-  const cards = document.querySelectorAll('.egg-card');
-  cards.forEach(card => card.classList.add('revealed'));
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════

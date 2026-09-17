@@ -72,10 +72,35 @@
     <button class="egg-close" onclick="closeEggWall()">✕</button>
     <div class="egg-header">
       <h2>🥚 神話 × 現實 塵封軼聞</h2>
-      <p class="egg-sub">翻開卡片，看看哪些神話悄悄藏在我們的日常之中</p>
-      <span class="egg-progress" id="eggProgress"><span class="dot"></span>已發現 0 / 0</span>
+      <p class="egg-sub">點擊抽卡，揭曉那些藏在日常中的神話軼聞</p>
+      <div class="egg-progress-bar">
+        <span class="egg-progress-text" id="eggProgressText">已揭曉 0 / 96</span>
+        <div class="egg-progress-track"><div class="egg-progress-fill" id="eggProgressFill"></div></div>
+      </div>
     </div>
-    <div class="egg-grid" id="eggGrid" onclick="if(event.target===this) closeEggWall()"></div>
+
+    <div class="egg-draw-area">
+      <div class="egg-draw-card" id="eggDrawCard" onclick="drawEggCard()">
+        <div class="egg-card-front">
+          <div class="egg-card-mystery">?</div>
+          <div class="egg-card-hint">點擊抽卡</div>
+        </div>
+        <div class="egg-card-back" id="eggCardBack">
+          <div class="egg-card-content">
+            <span class="egg-card-icon" id="eggCardIcon"></span>
+            <p class="egg-card-text" id="eggCardText"></p>
+          </div>
+        </div>
+      </div>
+      <p class="egg-draw-hint" id="eggDrawHint" style="display:none">點擊翻轉揭示</p>
+    </div>
+
+    <div class="egg-revealed-section" id="eggRevealedSection" style="display:none">
+      <h3 class="egg-revealed-title">已揭曉</h3>
+      <div class="egg-revealed-list" id="eggRevealedList"></div>
+    </div>
+
+    <button class="egg-reveal-all-btn" id="eggRevealAllBtn" onclick="revealAllEggs()" style="display:none">一鍵揭曉全部</button>
   </div>
 </div>
 
