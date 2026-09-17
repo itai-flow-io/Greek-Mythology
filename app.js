@@ -2051,19 +2051,24 @@ function toggleHeaderMenu(){
   if(isOpen){
     // 生成绳子上的按钮
     const items = [
-      { icon: '🔍', label: '搜尋', action: 'openSearch()' },
-      { icon: '🌌', label: '意識地圖', action: 'openMindMap()' },
-      { icon: '🥚', label: '塵封軼聞', action: 'openEggWall()' },
-      { icon: '📅', label: '時間軸', action: 'openTimeline()' },
-      { icon: '🎭', label: '你的抉擇', action: 'openPhilo()' },
-      { icon: '✉️', label: '書寫', action: 'openLetter()' },
-      { icon: '✦', action: 'toggleMirrorEffect()', subtle: true },
+      { icon: '🔍', label: '搜尋', action: 'openSearch()', anim: 'search' },
+      { icon: '🌌', label: '意識地圖', action: 'openMindMap()', anim: 'stars' },
+      { icon: '⏳', label: '塵封軼聞', action: 'openEggWall()', anim: 'egg' },
+      { icon: '🥚', label: '時間軸', action: 'openTimeline()', anim: 'hourglass' },
+      { icon: '🎭', label: '你的抉擇', action: 'openPhilo()', anim: 'mask' },
+      { icon: '✉️', label: '書寫', action: 'openLetter()', anim: 'ink' },
+      { icon: '✦', action: 'toggleMirrorEffect()', subtle: true, anim: 'sparkle' },
     ];
 
     rope.innerHTML = items.map((item, i) => `
       <div class="rope-segment" style="--delay:${i * 60}ms">
         ${i > 0 ? '<div class="rope-line"></div>' : ''}
-        <button class="egg-toggle rope-bead ${item.subtle ? 'rope-bead-subtle' : ''}" onclick="${item.action}">${item.icon} ${item.label || ''}</button>
+        <button class="egg-toggle rope-bead ${item.subtle ? 'rope-bead-subtle' : ''}" onclick="${item.action}">
+          <span class="rope-icon ${item.anim ? 'rope-icon-' + item.anim : ''}">
+            ${item.doubleIcon ? item.icon + item.doubleIcon : item.icon}
+          </span>
+          ${item.label ? '<span class="rope-label">'+item.label+'</span>' : ''}
+        </button>
       </div>
     `).join('');
   }
@@ -2511,7 +2516,7 @@ if(document.fonts && document.fonts.ready){
  *   - initEggDraw()         初始化抽卡系統
  *   - drawEggCard()         抽取一張隨機卡片
  *   - addToRevealedList()   加入已揭曉列表
- *   - revealAllEggs()       一鍵揭曉全部
+ *   - viewRevealedEgg()     查看已揭曉的卡
  *   - openEggWall()         打開抽卡介面
  *   - closeEggWall()        關閉抽卡介面
  *
@@ -2675,6 +2680,13 @@ function initEggDraw(){
   // 初始化已揭曉列表
   renderRevealedList();
   updateEggProgress();
+
+  // 如果有已揭曉的卡，顯示區域
+  if(discoveredEggs.size > 0){
+    const section = document.getElementById('eggRevealedSection');
+    if(section) section.style.display = 'block';
+  }
+
   // 檢查是否全部揭曉
   if(discoveredEggs.size >= EASTER_EGGS.length){
     document.getElementById('eggDrawCard')?.classList.add('completed');
@@ -2683,8 +2695,6 @@ function initEggDraw(){
       front.querySelector('.egg-card-mystery').textContent = '✨';
       front.querySelector('.egg-card-hint').textContent = '全部揭曉';
     }
-    const btn = document.getElementById('eggRevealAllBtn');
-    if(btn) btn.style.display = 'none';
   }
 }
 
@@ -2758,7 +2768,6 @@ function flipEggCard(){
 function addToRevealedList(index){
   const list = document.getElementById('eggRevealedList');
   const section = document.getElementById('eggRevealedSection');
-  const btn = document.getElementById('eggRevealAllBtn');
   if(!list) return;
 
   const egg = EASTER_EGGS[index];
@@ -2769,14 +2778,30 @@ function addToRevealedList(index){
     <span class="revealed-num">${String(index + 1).padStart(3, '0')}</span>
   `;
   item.title = egg.text;
+  item.onclick = () => viewRevealedEgg(index);
   list.appendChild(item);
 
   // 顯示區域
   if(section) section.style.display = 'block';
-  if(btn) btn.style.display = discoveredEggs.size < EASTER_EGGS.length ? 'block' : 'none';
 
   // 滾動到最新
   list.scrollLeft = list.scrollWidth;
+}
+
+function viewRevealedEgg(index){
+  const egg = EASTER_EGGS[index];
+  const drawCard = document.getElementById('eggDrawCard');
+
+  // 設置內容
+  document.getElementById('eggCardIcon').textContent = egg.icon;
+  document.getElementById('eggCardText').textContent = egg.text;
+
+  // 直接翻開顯示
+  isFlipped = true;
+  if(drawCard) drawCard.classList.add('flipped');
+
+  const hint = document.getElementById('eggDrawHint');
+  if(hint) hint.style.display = 'block';
 }
 
 function renderRevealedList(){
@@ -2794,41 +2819,6 @@ function resetDrawCard(){
     isFlipped = false;
   }
   if(hint) hint.style.display = 'none';
-}
-
-function revealAllEggs(){
-  // 一鍵揭曉剩餘所有
-  const unrevealed = [];
-  EASTER_EGGS.forEach((_, i) => { if(!discoveredEggs.has(i)) unrevealed.push(i); });
-
-  unrevealed.forEach((idx, n) => {
-    setTimeout(()=>{
-      discoveredEggs.add(idx);
-      addToRevealedList(idx);
-      updateEggProgress();
-    }, n * 100);
-  });
-
-  setTimeout(()=>{
-    try{ localStorage.setItem(EGG_KEY, JSON.stringify([...discoveredEggs])); }catch(e){}
-    const drawCard = document.getElementById('eggDrawCard');
-    if(drawCard){
-      drawCard.classList.add('completed');
-      const front = document.querySelector('.egg-card-front');
-      if(front){
-        front.querySelector('.egg-card-mystery').textContent = '✨';
-        front.querySelector('.egg-card-hint').textContent = '全部揭曉';
-      }
-    }
-    const btn = document.getElementById('eggRevealAllBtn');
-    if(btn) btn.style.display = 'none';
-    spawnSparkles(window.innerWidth/2, window.innerHeight/3);
-    playToastSound();
-    showMilestoneToast({
-      text:'塵歸塵，土歸土——但你已經把每一粒都親手揭曉過了。',
-      author:'🥚 塵封軼聞・全部揭曉'
-    });
-  }, unrevealed.length * 100 + 200);
 }
 
 function spawnSparkles(x, y){

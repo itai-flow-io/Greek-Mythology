@@ -349,6 +349,8 @@ header p{
 .header-rope.open{
   max-height:400px;
   opacity:1;
+  position:relative;
+  z-index:100;
 }
 .rope-segment{
   display:flex;
@@ -360,7 +362,7 @@ header p{
   transition:max-height 0.4s ease var(--delay), opacity 0.3s ease var(--delay);
 }
 .header-rope.open .rope-segment{
-  max-height:40px;
+  max-height:60px;
   opacity:1;
 }
 .rope-line{
@@ -369,16 +371,16 @@ header p{
   background:linear-gradient(180deg, rgba(185,179,214,0.5), rgba(185,179,214,0.2));
 }
 .rope-bead{
-  padding:3px 12px;
+  padding:8px 20px;
   font-size:10px;
-  margin:1px 0;
-  background:rgba(13,15,34,0.9);
-  border:1px solid rgba(185,179,214,0.25);
+  margin:2px 0;
+  background:transparent;
+  border:none;
 }
 .rope-bead:hover{
-  background:rgba(30,35,60,0.95);
-  border-color:rgba(201,168,76,0.5);
+  background:transparent;
   color:#EFE6CE;
+  text-shadow:0 0 8px rgba(201,168,76,0.3);
 }
 .rope-bead-subtle{
   opacity:0.4;
@@ -387,6 +389,171 @@ header p{
 }
 .rope-bead-subtle:hover{
   opacity:0.7;
+}
+
+/* 圖標與文字分開 */
+.rope-icon{
+  display:inline-block;
+  font-size:16px;
+}
+.rope-label{
+  margin-left:6px;
+  letter-spacing:0.05em;
+}
+
+/* 🌌 意識地圖 - 銀河旋轉 */
+.rope-icon-stars:hover{
+  animation:galaxySpin 2s ease-in-out infinite;
+}
+@keyframes galaxySpin{
+  0%{ transform:scale(1) rotate(0deg); text-shadow:0 0 8px rgba(200,180,255,0.4); }
+  25%{ transform:scale(1.2) rotate(90deg); text-shadow:0 0 15px rgba(200,180,255,0.7); }
+  50%{ transform:scale(1) rotate(180deg); text-shadow:0 0 8px rgba(200,180,255,0.4); }
+  75%{ transform:scale(1.2) rotate(270deg); text-shadow:0 0 15px rgba(200,180,255,0.7); }
+  100%{ transform:scale(1) rotate(360deg); text-shadow:0 0 8px rgba(200,180,255,0.4); }
+}
+
+/* 🥚 時間軸 - 雞蛋輕輕晃動 */
+.rope-icon-hourglass:hover{
+  animation:eggWobble 1.2s ease-in-out infinite;
+}
+@keyframes eggWobble{
+  0%, 100%{ transform:rotate(0deg) scale(1); }
+  25%{ transform:rotate(-4deg) scale(1.05); }
+  75%{ transform:rotate(4deg) scale(1.05); }
+}
+
+/* 🎭 你的抉擇 - 雙面具分開 */
+.rope-icon-mask{
+  position:relative;
+  display:inline-block;
+}
+.rope-icon-mask::after{
+  content:'🎭';
+  position:absolute;
+  left:0;
+  opacity:0;
+  transition:all .4s ease;
+}
+.rope-icon-mask:hover::after{
+  opacity:1;
+  left:100%;
+  text-shadow:0 0 10px rgba(200,180,230,0.6);
+  animation:maskSplit 1.5s ease-in-out infinite;
+}
+@keyframes maskSplit{
+  0%, 100%{ left:100%; text-shadow:0 0 8px rgba(200,180,230,0.4); }
+  50%{ left:calc(100% + 6px); text-shadow:0 0 15px rgba(200,180,230,0.7); }
+}
+
+/* ✦ 星光爆發 */
+.rope-icon-sparkle:hover{
+  animation:sparkleBurst .8s ease-in-out infinite;
+}
+@keyframes sparkleBurst{
+  0%, 100%{ transform:scale(1); text-shadow:0 0 8px rgba(255,220,150,0.4); }
+  50%{ transform:scale(1.4); text-shadow:0 0 20px rgba(255,220,150,0.8); }
+}
+
+/* 🔍 搜尋 - 放大鏡飄出數字 */
+.rope-icon-search{
+  display:inline-block;
+  position:relative;
+}
+.rope-icon-search:hover{
+  animation:searchPulse 1.2s ease-in-out infinite;
+}
+.rope-icon-search:hover::after{
+  content:'1 2 3';
+  position:absolute;
+  font-size:9px;
+  top:0;
+  left:100%;
+  margin-left:4px;
+  color:rgba(200,200,220,0.9);
+  white-space:nowrap;
+  animation:searchFloat 2.5s ease-out infinite;
+  pointer-events:none;
+  z-index:999;
+}
+@keyframes searchPulse{
+  0%, 100%{ transform:scale(1); }
+  50%{ transform:scale(1.2); }
+}
+@keyframes searchFloat{
+  0%{ opacity:0; transform:translateX(-10px); letter-spacing:-2px; }
+  20%{ opacity:1; letter-spacing:0; }
+  100%{ opacity:0; transform:translateX(50px); letter-spacing:8px; }
+}
+
+/* ⏳ 塵封軼聞 - 蛋殼裂開金光 (原本hourglass的動效) */
+.rope-icon-egg{
+  position:relative;
+  display:inline-block;
+}
+.rope-icon-egg:hover{
+  animation:eggCrack 2s ease-in-out infinite;
+  text-shadow:0 0 20px rgba(255,220,150,0.8);
+}
+.rope-icon-egg:hover::before,
+.rope-icon-egg:hover::after,
+.rope-icon-egg:hover span{
+  content:'✦';
+  position:absolute;
+  font-size:8px;
+  color:rgba(255,220,150,0.9);
+  animation:eggRay 1.5s ease-out infinite;
+}
+.rope-icon-egg:hover::before{
+  top:-8px;
+  left:50%;
+  transform:translateX(-50%);
+  animation-delay:0s;
+}
+.rope-icon-egg:hover::after{
+  top:50%;
+  right:-12px;
+  transform:translateY(-50%);
+  animation-delay:0.3s;
+}
+@keyframes eggCrack{
+  0%, 100%{ transform:scale(1); }
+  30%{ transform:scale(1.25) rotate(-10deg); }
+  60%{ transform:scale(1.15) rotate(10deg); }
+}
+@keyframes eggRay{
+  0%{ opacity:0; transform:scale(0.5); }
+  40%{ opacity:1; transform:scale(1.3); }
+  100%{ opacity:0; transform:scale(0.3) translateY(-15px); }
+}
+
+/* ✉️ 書寫 - 信封輕輕打開 */
+.rope-icon-ink{
+  display:inline-block;
+  position:relative;
+}
+.rope-icon-ink:hover{
+  animation:envelopeWave 2s ease-in-out infinite;
+  transform-origin:bottom center;
+}
+.rope-icon-ink:hover::after{
+  content:'...';
+  position:absolute;
+  font-size:10px;
+  top:-5px;
+  right:-12px;
+  color:rgba(200,200,220,0.8);
+  animation:ellipsisPop 1.5s ease-in-out infinite;
+}
+@keyframes envelopeWave{
+  0%, 100%{ transform:scale(1) rotate(0deg); }
+  25%{ transform:scale(1.1) rotate(-8deg); }
+  50%{ transform:scale(1.15) rotate(0deg); }
+  75%{ transform:scale(1.1) rotate(8deg); }
+}
+@keyframes ellipsisPop{
+  0%, 100%{ opacity:0.4; transform:scale(0.8); }
+  50%{ opacity:1; transform:scale(1.1); }
 }
 .progress-counter{
   display:inline-flex;
@@ -1032,6 +1199,8 @@ header p{
   aspect-ratio:3 / 4;
   perspective:1000px;
   cursor:pointer;
+  user-select:none;
+  -webkit-user-select:none;
 }
 .egg-card-front, .egg-card-back{
   position:absolute;
@@ -1058,6 +1227,24 @@ header p{
     0 0 20px rgba(255,255,255,0.1),
     0 12px 40px rgba(0,0,0,0.3),
     inset 0 1px 2px rgba(255,255,255,0.4);
+  animation:eggGlow 3s ease-in-out infinite;
+}
+
+@keyframes eggGlow{
+  0%, 100%{
+    box-shadow:
+      0 0 20px rgba(255,255,255,0.1),
+      0 12px 40px rgba(0,0,0,0.3),
+      inset 0 1px 2px rgba(255,255,255,0.4),
+      0 0 30px rgba(201,168,76,0);
+  }
+  50%{
+    box-shadow:
+      0 0 20px rgba(255,255,255,0.1),
+      0 12px 40px rgba(0,0,0,0.3),
+      inset 0 1px 2px rgba(255,255,255,0.4),
+      0 0 50px rgba(201,168,76,0.3);
+  }
 }
 .egg-card-mystery{
   font-family:'Cinzel', serif;
@@ -1134,11 +1321,12 @@ header p{
   overflow-x:auto;
   padding:8px 4px;
   scrollbar-width:thin;
-  scrollbar-color:rgba(255,255,255,0.2) transparent;
+  scrollbar-color:rgba(255,255,255,0.1) transparent;
   -webkit-overflow-scrolling:touch;
 }
-.egg-revealed-list::-webkit-scrollbar{ height:4px; }
-.egg-revealed-list::-webkit-scrollbar-thumb{ background:rgba(255,255,255,0.2); border-radius:2px; }
+.egg-revealed-list::-webkit-scrollbar{ height:3px; }
+.egg-revealed-list::-webkit-scrollbar-track{ background:transparent; }
+.egg-revealed-list::-webkit-scrollbar-thumb{ background:rgba(255,255,255,0.08); border-radius:2px; }
 .egg-revealed-item{
   flex-shrink:0;
   width:64px;
@@ -1152,8 +1340,10 @@ header p{
   justify-content:center;
   gap:4px;
   padding:6px;
-  cursor:default;
+  cursor:pointer;
   transition:transform .2s ease, box-shadow .2s ease;
+  user-select:none;
+  -webkit-user-select:none;
 }
 .egg-revealed-item:hover{
   transform:translateY(-2px);
@@ -1166,28 +1356,6 @@ header p{
   color:rgba(154,147,184,0.6);
   letter-spacing:0.05em;
 }
-
-/* 一鍵揭曉按鈕 */
-.egg-reveal-all-btn{
-  display:block;
-  margin:16px auto 0;
-  padding:10px 20px;
-  background:rgba(255,255,255,0.06);
-  border:1px solid rgba(255,255,255,0.15);
-  border-radius:8px;
-  color:rgba(154,147,184,0.8);
-  font-family:'Cinzel', serif;
-  font-size:11px;
-  letter-spacing:0.1em;
-  cursor:pointer;
-  transition:all .3s ease;
-}
-.egg-reveal-all-btn:hover{
-  background:rgba(255,255,255,0.12);
-  color:rgba(200,190,220,0.95);
-  border-color:rgba(255,255,255,0.25);
-}
-.egg-reveal-all-btn:active{ transform:scale(0.97); }
 
 /* 完成全部 */
 .egg-draw-card.completed .egg-card-front .egg-card-mystery{
