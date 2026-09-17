@@ -372,16 +372,15 @@
   </div>
 </div>
 
-<button class="sound-fab" id="soundToggle" onclick="toggleSound()" aria-label="切換音效">🔊</button>
-<button class="back-to-top-fab" id="backToTopFab" onclick="scrollToTop()" aria-label="回到頂部">↑</button>
-<nav class="progress-rail" id="progressRail"></nav>
+<button class="sound-fab" id="soundToggle" onclick="handleSoundClick(event)" aria-label="單擊切換音效 | 雙擊回到頂部" title="單擊: 音效  |  雙擊: 回頂">🔊</button>
+<div class="sound-hint" id="soundHint">雙擊回頂</div>
 
 <div class="legend-wrap">
   <button class="legend-toggle" id="legendToggle" onclick="toggleLegend()">
-    <span id="legendToggleLabel">收起分支導覽 Collapse</span>
-    <span class="legend-toggle-arrow" id="legendToggleArrow">▾</span>
+    <span id="legendToggleLabel">展開分支導覽 Expand</span>
+    <span class="legend-toggle-arrow" id="legendToggleArrow" style="transform:rotate(-90deg)">▾</span>
   </button>
-  <div class="legend" id="legend">
+  <div class="legend collapsed" id="legend">
     <button data-gen="primordial" style="--dot:#3B2E42" onclick="jumpTo('primordial')"><span class="dot"></span>創世 · 原初神</button>
     <button data-gen="titan" style="--dot:#6B4A2F" onclick="jumpTo('titan')"><span class="dot"></span>泰坦神族</button>
     <button data-gen="olympian" style="--dot:#1F4959" onclick="jumpTo('olympian')"><span class="dot"></span>奧林帕斯神族</button>

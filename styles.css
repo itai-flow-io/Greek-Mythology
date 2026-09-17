@@ -1166,7 +1166,7 @@ header p{
 
 .legend-wrap{
   background:var(--bg-deep);
-  border-bottom:1px solid rgba(0,0,0,0.08);
+  border-bottom:1px solid rgba(0,0,0,0.06);
 }
 .legend-toggle{
   display:flex;
@@ -1174,33 +1174,33 @@ header p{
   justify-content:center;
   gap:6px;
   width:100%;
-  padding:9px 8px;
+  padding:8px 8px;
   background:none;
   border:none;
   cursor:pointer;
   font-family:'Cinzel', 'Noto Serif TC', serif;
-  font-size:10.5px;
-  letter-spacing:0.12em;
+  font-size:10px;
+  letter-spacing:0.1em;
   color:var(--ink-soft);
   text-transform:uppercase;
-  opacity:0.75;
+  opacity:0.6;
   transition:opacity .15s ease;
 }
-.legend-toggle:hover{ opacity:1; }
+.legend-toggle:hover{ opacity:0.9; }
 .legend-toggle-arrow{
   display:inline-block;
-  font-size:9px;
+  font-size:8px;
   transition:transform .3s ease;
 }
 .legend{
   display:flex;
   flex-wrap:wrap;
   justify-content:center;
-  gap:8px;
-  padding:0 16px 18px;
-  max-height:600px;
+  gap:6px;
+  padding:4px 12px 14px;
+  max-height:400px;
   overflow:hidden;
-  transition:max-height .35s ease, padding .35s ease, opacity .25s ease;
+  transition:max-height .3s ease, padding .3s ease, opacity .2s ease;
   opacity:1;
 }
 .legend.collapsed{
@@ -1214,25 +1214,25 @@ header p{
 }
 .legend button{
   font-family:'Cinzel', 'Noto Serif TC', serif;
-  font-size:11px;
-  font-weight:500;
-  padding:4px 10px;
+  font-size:10px;
+  font-weight:400;
+  padding:3px 8px;
   background:transparent;
-  color:#c4bfd6;
+  color:#a09aac;
   cursor:pointer;
   display:flex;
   align-items:center;
-  gap:7px;
-  transition:color .2s ease;
+  gap:5px;
+  transition:color .15s ease;
   border:none;
-  letter-spacing:0.05em;
+  letter-spacing:0.04em;
 }
 .legend button:hover{
   color:#EFE6CE;
 }
 .legend .dot{
-  width:8px;
-  height:8px;
+  width:6px;
+  height:6px;
   border-radius:50%;
   background:var(--dot,var(--gold));
   display:inline-block;
@@ -1836,20 +1836,10 @@ svg#connections{
   .tree-wrap{ padding-bottom:40px; }
 }
 
-.progress-rail{
-  position:fixed;
-  right:18px;
-  top:50%;
-  transform:translateY(-50%);
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-  z-index:40;
-}
 .sound-fab{
   position:fixed;
   right:18px;
-  top:calc(50% - 140px);
+  top:18px;
   z-index:41;
   width:34px;
   height:34px;
@@ -1867,54 +1857,22 @@ svg#connections{
 }
 .sound-fab:hover{ transform:scale(1.1); box-shadow:0 5px 14px rgba(0,0,0,0.2); }
 .sound-fab.muted{ opacity:0.55; }
-.back-to-top-fab{
+.sound-hint{
   position:fixed;
-  right:18px;
-  top:calc(50% - 140px + 40px);
-  z-index:41;
-  width:34px;
-  height:34px;
-  border-radius:50%;
-  border:1.5px solid rgba(166,129,46,0.4);
-  background:var(--card-bg);
-  box-shadow:0 3px 10px rgba(0,0,0,0.15);
-  font-size:16px;
-  font-weight:700;
-  color:var(--ink);
-  line-height:1;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  cursor:pointer;
+  right:58px;
+  top:22px;
+  font-size:9px;
+  color:var(--ink-soft);
   opacity:0;
+  transition:opacity .3s ease;
   pointer-events:none;
-  transform:translateY(6px);
-  transition:transform .18s ease, box-shadow .18s ease, opacity .25s ease;
+  white-space:nowrap;
+  letter-spacing:0.05em;
 }
-.back-to-top-fab.visible{ opacity:1; pointer-events:auto; transform:translateY(0); }
-.back-to-top-fab:hover{ transform:scale(1.1); box-shadow:0 5px 14px rgba(0,0,0,0.2); }
+.sound-hint.show{ opacity:0.7; }
 @media (max-width:880px){
   .sound-fab{ right:12px; top:12px; }
-  .back-to-top-fab{ right:12px; top:48px; }
-}
-.rail-dot{
-  width:8px;
-  height:8px;
-  border-radius:50%;
-  border:1.5px solid var(--dot-color, var(--gold));
-  background:transparent;
-  padding:0;
-  cursor:pointer;
-  transition:background .2s ease, transform .2s ease, box-shadow .2s ease;
-}
-.rail-dot:hover{ transform:scale(1.4); }
-.rail-dot.active{
-  background:var(--dot-color, var(--gold));
-  box-shadow:0 0 0 3px rgba(0,0,0,0.07);
-  transform:scale(1.2);
-}
-@media (max-width:880px){
-  .progress-rail{ display:none; }
+  .sound-hint{ right:52px; top:16px; }
 }
 
 footer{

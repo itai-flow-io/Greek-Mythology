@@ -515,6 +515,21 @@ function toggleSound(){
   if(soundOn) getAudioCtx();
 }
 
+// Combined sound + scroll button
+let soundClickTimer = null;
+function handleSoundClick(e){
+  if(soundClickTimer){
+    clearTimeout(soundClickTimer);
+    soundClickTimer = null;
+    window.scrollTo({top:0, behavior:'smooth'});
+  } else {
+    soundClickTimer = setTimeout(()=>{
+      toggleSound();
+      soundClickTimer = null;
+    }, 250);
+  }
+}
+
 const STORAGE_KEY = 'greekMythTree_visited_v1';
 let visited = new Set();
 try{
@@ -2215,29 +2230,6 @@ const GEN_META = [
   {id:'crosscultural', label:'跨文化連結', color:'#9C6B3E'},
 ];
 
-function setupProgressRail(){
-  const rail = document.getElementById('progressRail');
-  if(!rail) return;
-  GEN_META.forEach(g=>{
-    const dot = document.createElement('button');
-    dot.className = 'rail-dot';
-    dot.style.setProperty('--dot-color', g.color);
-    dot.title = g.label;
-    dot.setAttribute('aria-label', g.label);
-    dot.dataset.gen = g.id;
-    dot.onclick = ()=> jumpTo(g.id);
-    rail.appendChild(dot);
-  });
-  const io = new IntersectionObserver((entries)=>{
-    entries.forEach(entry=>{
-      if(!entry.isIntersecting) return;
-      const gen = entry.target.id.replace('sec-','');
-      rail.querySelectorAll('.rail-dot').forEach(d=>d.classList.toggle('active', d.dataset.gen===gen));
-    });
-  }, {threshold:0, rootMargin:'-45% 0px -45% 0px'});
-  document.querySelectorAll('.gen-section').forEach(s=>io.observe(s));
-}
-
 // Random loading text
 const loadingMessages = [
   { zh: '未能逃逸...', en: 'Failing to escape...' },
@@ -2459,13 +2451,28 @@ function setupHeaderAnimPause(){
 
 setupRevealObserver();
 setupHeaderAnimPause();
-setupProgressRail();
 (function initSoundButton(){
   const btn = document.getElementById('soundToggle');
   if(btn){
     btn.textContent = soundOn ? '🔊' : '🔇';
     btn.classList.toggle('muted', !soundOn);
   }
+})();
+(function showSoundHintOnce(){
+  const hint = document.getElementById('soundHint');
+  if(!hint) return;
+  let shown = false;
+  const show = ()=>{
+    if(shown) return;
+    shown = true;
+    hint.classList.add('show');
+    setTimeout(()=> hint.classList.remove('show'), 3000);
+  };
+  let scrolled = false;
+  window.addEventListener('scroll', ()=>{
+    if(scrolled) return;
+    if(window.scrollY > 200){ scrolled = true; show(); }
+  }, {once:true, passive:true});
 })();
 window.addEventListener('load', ()=>{
   drawConnections();
@@ -2489,14 +2496,6 @@ document.getElementById('treeWrap').addEventListener('scroll', requestDrawConnec
 if(document.fonts && document.fonts.ready){
   document.fonts.ready.then(drawConnections);
 }
-
-function scrollToTop(){
-  window.scrollTo({top:0, behavior:'smooth'});
-}
-window.addEventListener('scroll', ()=>{
-  const fab = document.getElementById('backToTopFab');
-  if(fab) fab.classList.toggle('visible', window.scrollY > 400);
-}, {passive:true});
 
 /* ═══════════════════════════════════════════════════════════════════════════════
  * § 塵封軼聞（彩蛋牆）(Easter Egg Wall)
